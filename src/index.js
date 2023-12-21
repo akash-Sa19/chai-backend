@@ -5,11 +5,25 @@
 import dotenv from "dotenv";
 
 import connectDB from "./db/index.js";
+import { app } from "./app.js";
 
 dotenv.config({
   path: "./env",
 });
-connectDB();
+
+// this async function returns a promise
+connectDB()
+  .then(() => {
+    app.on("error", () => {
+      console.log("Error:", error);
+      throw error;
+    });
+
+    app.listen(process.env.PORT || 7000, () => {
+      console.log(`server is running at port: ${process.env.PORT}`);
+    });
+  })
+  .catch((error) => console.log("DB connection error src->index.js :", error));
 
 // ------------------------------------------------------
 // import mongoose from "mongoose";
