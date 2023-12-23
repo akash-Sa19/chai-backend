@@ -22,4 +22,16 @@ app.use(express.static("public"));
 // the package cookie-parser is used to perform curd operation on the cookies of the user in browser
 app.use(cookieParser());
 
+// routes import
+import userRouter from "./routes/user.routers.js";
+
+// by using the use method from express, we can send control to the user.router.js file
+// routes declaration
+app.use("/api/v1/users", userRouter);
+// it is standard pratice give versions to your api, as in userRouter is our api and 1st version
+
+// the route will look like
+// http://localhost:3000/api/v1/users/register
+// http://localhost:3000/api/v1/users/login
+
 export { app };
