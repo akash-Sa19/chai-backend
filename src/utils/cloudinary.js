@@ -12,7 +12,7 @@ import { v2 as cloudinary } from "cloudinary";
 // node file sysyem handler
 import fs from "fs";
 
-// is function is copy?past from cloudinary
+// is function is copy/pasted from cloudinary docs
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
