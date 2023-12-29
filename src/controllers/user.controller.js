@@ -4,6 +4,22 @@ import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
+const generateAccessAndRefreshToken = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    const accessToken = await user.generateAccessToken();
+    const refreshToken = await user.generateRefreshToken();
+
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
+  } catch (error) {
+    throw new ApiError(
+      500,
+      "something went wrong while generating refresh and access token"
+    );
+  }
+};
+
 const registerUser = asyncHandler(async (req, res) => {
   /*
     get user details from fontend
@@ -104,8 +120,6 @@ const registerUser = asyncHandler(async (req, res) => {
   // });
 });
 
-export { registerUser };
-
 // response print
 // console.log(req.files); -> down
 
@@ -168,3 +182,36 @@ export { registerUser };
 //   original_filename: 'IMG_5727',
 //   api_key: '398553524726635'
 // }
+
+const loginUser = asyncHandler(async (req, res) => {
+  // req body -> data
+  // username or email
+  // find the user
+  // password check
+  // accessToken and RefreshToken
+  // send cookies
+
+  const { email, username, password } = req.body;
+  if (!username || !email) {
+    throw new ApiError(400, "username or password is required");
+  }
+
+  // $and $comment $nor $or $text $where
+  // all are mongoDB operator
+  const user = await User.findOne({
+    $or: [{ username }, { email }],
+  });
+
+  if (!user) {
+    throw new ApiError(400, "user does not exists");
+  }
+
+  // point to note - we are using the "user" not "User", because "User" is a object provided by mongoose
+  // and to access the user method defined in user.model.js we have to use "user" object which we have initilized using -> "findOne" method
+  const isPasswordValid = await user.isPasswordCorrect(password);
+  if (!isPasswordValid) {
+    throw new ApiError(400, "Invalid user crediential");
+  }
+});
+
+export { registerUser, loginUser };

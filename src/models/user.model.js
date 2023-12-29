@@ -60,7 +60,7 @@ userSchema.pre("save", async function (next) {
 });
 
 // The reason to use "function" over arrow function is that we can't access to models property using arrow function
-// Beacuse this.variable will refer to the variable one level where we are using this
+// Because this.variable will refer to the variable one level up where we are using this
 // since their is no object one level up of userSchema it will refrence to global object
 
 // By using userSchema.methods we can create our own methods to inject in the models
