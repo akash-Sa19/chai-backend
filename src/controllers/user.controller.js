@@ -7,11 +7,17 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 const generateAccessAndRefreshToken = async (userId) => {
   try {
     const user = await User.findById(userId);
-    const accessToken = await user.generateAccessToken();
-    const refreshToken = await user.generateRefreshToken();
+    // console.log(user);
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
 
     user.refreshToken = refreshToken;
+    // this validteBeforeSave (true -> default) is set to false, because what this method do is check if all types, and required key are serverd
+    // since we are only providing refreshToken's value in the model, that why we set it to false (to prevent errors)
     await user.save({ validateBeforeSave: false });
+    // console.log(accessToken);
+    // console.log(refreshToken);
+    return { accessToken, refreshToken };
   } catch (error) {
     throw new ApiError(
       500,
@@ -192,7 +198,7 @@ const loginUser = asyncHandler(async (req, res) => {
   // send cookies
 
   const { email, username, password } = req.body;
-  if (!username || !email) {
+  if (!username && !email) {
     throw new ApiError(400, "username or password is required");
   }
 
@@ -212,6 +218,72 @@ const loginUser = asyncHandler(async (req, res) => {
   if (!isPasswordValid) {
     throw new ApiError(400, "Invalid user crediential");
   }
+
+  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+    user._id
+  );
+
+  // why we needed to call server one more time ?
+  // ->because that instance of the user does not contain refreshToken
+  // optional step as we are skiping the refresh Token
+  const loggedInUser = await User.findById(user.id).select(
+    "-password -refreshToken"
+  );
+
+  // this two option prevent the modification of cookies from the fontend and can only be modified by server (or in the backend)
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          user: loggedInUser,
+          accessToken,
+          refreshToken,
+        },
+        "user logged in successfully"
+      )
+    );
 });
 
-export { registerUser, loginUser };
+const logoutUser = asyncHandler(async (req, res) => {
+  // clear cookies from the browser
+  // clear refreshToken from the user.model
+
+  // this findByIdAndUpdate takes three arg
+  // 1 -> id
+  // 2 -> (object) value that you want to update
+  // 3 -> (object) more configuration
+  await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set: {
+        refreshToken: undefined,
+      },
+    },
+    {
+      // this configure return the new updated value
+      new: true,
+    }
+  );
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  return res
+    .status(200)
+    .clearCookies("accessToken", options)
+    .clearCookies("refreshToken", options)
+    .json(new ApiResponse(200, {}, "user loggedOut successfully"));
+});
+
+export { registerUser, loginUser, logoutUser };
