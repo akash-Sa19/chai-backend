@@ -11,6 +11,8 @@ import { verifyJWT } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 router.route("/register").post(
+  // we can use upload.single to upload single file
+  // we have used fields (because we want to upload many file) which takes arrays of object
   upload.fields([
     {
       name: "avatar",
